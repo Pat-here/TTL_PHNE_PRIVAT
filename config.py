@@ -23,11 +23,6 @@ def load_config() -> dict:
         "ADMIN_ID": _env("ADMIN_ID"),
         "SUPABASE_URL": _env("SUPABASE_URL"),
         "SUPABASE_KEY": _env("SUPABASE_KEY"),
-        # Opcjonalne "podniesienie poprzeczki" - podpis HMAC żądań z aplikacji-klienta:
-        # Jeśli ustawisz CLIENT_HMAC_SECRET, API będzie wymagało nagłówków:
-        # - X-Client-Timestamp: unix seconds
-        # - X-Client-Signature: hex(hmac_sha256(secret, f"{ts}.{raw_body}"))
-        "CLIENT_HMAC_SECRET": _env("CLIENT_HMAC_SECRET"),
         # Ustawienia API:
         "API_RATE_LIMIT_PER_MINUTE": int(_env("API_RATE_LIMIT_PER_MINUTE", "120") or "120"),
         "API_RATE_LIMIT_BURST": int(_env("API_RATE_LIMIT_BURST", "30") or "30"),

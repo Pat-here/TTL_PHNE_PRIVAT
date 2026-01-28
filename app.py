@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import os
 import functools
-import hashlib
-import hmac
 import time
 import uuid
 from collections import defaultdict
@@ -61,29 +59,6 @@ def rate_limit(ip: str) -> bool:
 def parse_json() -> dict:
     data = request.get_json(silent=True)
     return data if isinstance(data, dict) else {}
-
-
-def verify_client_signature() -> bool:
-    secret = cfg.get("CLIENT_HMAC_SECRET")
-    if not secret:
-        return True
-
-    ts = request.headers.get("X-Client-Timestamp", "")
-    sig = request.headers.get("X-Client-Signature", "")
-    try:
-        ts_int = int(ts)
-    except Exception:
-        return False
-
-    now = int(time.time())
-    # okno anty-replay 5 minut
-    if abs(now - ts_int) > 300:
-        return False
-
-    raw = request.get_data() or b""
-    msg = f"{ts_int}.".encode("utf-8") + raw
-    expected = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, sig)
 
 
 def login_required(f):
@@ -732,10 +707,6 @@ def api_verify_v1():
     if not rate_limit(ip):
         return jsonify({"valid": False, "message": "Rate Limited"}), 429
 
-    if not verify_client_signature():
-        log_security_event(None, ip, None, "Bad client signature", "warning")
-        return jsonify({"valid": False, "message": "Bad Signature"}), 401
-
     data = parse_json()
     key = (data.get("key") or "").strip()
     hwid = (data.get("hwid") or "").strip()
@@ -793,10 +764,6 @@ def api_heartbeat_v1():
 
     if not rate_limit(ip):
         return jsonify({"ok": False, "message": "Rate Limited"}), 429
-
-    if not verify_client_signature():
-        log_security_event(None, ip, None, "Bad client signature (heartbeat)", "warning")
-        return jsonify({"ok": False, "message": "Bad Signature"}), 401
 
     data = parse_json()
     key = (data.get("key") or "").strip()
