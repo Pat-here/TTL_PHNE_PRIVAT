@@ -132,6 +132,12 @@ def _ensure_device_binding(key: str, lic: dict, hwid: str, ip: str, ua: str | No
     """
     max_devices = int(lic.get("max_devices") or 1)
 
+    # HARD-CODE: 1 klucz = 1 urządzenie.
+    # Jeśli legacy hwid jest już ustawiony, zawsze wymagaj zgodności — niezależnie od license_devices.
+    current_hwid = lic.get("hwid")
+    if current_hwid is not None and current_hwid != hwid:
+        return False, "HWID Mismatch", None
+
     # --- Nowy model (license_devices) ---
     try:
         existing = (
@@ -160,6 +166,13 @@ def _ensure_device_binding(key: str, lic: dict, hwid: str, ip: str, ua: str | No
                 ).eq("id", device["id"]).execute()
             except Exception:
                 pass
+
+            # Utrzymuj legacy licenses.hwid dla UI / kompatybilności (jeśli puste)
+            if current_hwid is None:
+                try:
+                    db.table("licenses").update({"hwid": hwid}).eq("license_key", key).execute()
+                except Exception:
+                    pass
 
             return True, "OK", device
 
@@ -194,6 +207,14 @@ def _ensure_device_binding(key: str, lic: dict, hwid: str, ip: str, ua: str | No
             .data
         )
         device_row = device[0] if device else None
+
+        # Utrzymuj legacy licenses.hwid dla UI / kompatybilności (pierwszy bind)
+        if current_hwid is None:
+            try:
+                db.table("licenses").update({"hwid": hwid}).eq("license_key", key).execute()
+            except Exception:
+                pass
+
         return True, "OK", device_row
 
     except APIError:
@@ -204,7 +225,6 @@ def _ensure_device_binding(key: str, lic: dict, hwid: str, ip: str, ua: str | No
         pass
 
     # --- Legacy (licenses.hwid) ---
-    current_hwid = lic.get("hwid")
     if current_hwid is None:
         try:
             db.table("licenses").update({"hwid": hwid}).eq("license_key", key).execute()
