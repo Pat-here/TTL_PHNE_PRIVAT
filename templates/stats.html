@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <title>Statystyki — ThunderT Admin</title>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --thundert-yellow: #FFD700;
+            --thundert-yellow-hover: #e6c200;
+            --thundert-purple: #ab47bc;
+            --thundert-purple-light: #ce93d8;
+            --thundert-green: #00c853;
+            --thundert-red: #f44336;
+            --thundert-bg: #0a0a0a;
+            --thundert-card: #111;
+            --thundert-border: #333;
+        }
+        body { background: var(--thundert-bg); color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
+        .card { background: var(--thundert-card); border: 1px solid var(--thundert-border); margin-bottom: 20px; }
+        h1, h2, h5 { color: var(--thundert-yellow); text-transform: uppercase; letter-spacing: 1px; }
+        .section-title { color: var(--thundert-yellow); border-bottom: 2px solid var(--thundert-yellow); padding-bottom: 0.35rem; margin-bottom: 1rem; display: inline-block; }
+        .stat-card { background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); border: 1px solid var(--thundert-border); border-radius: 8px; padding: 1.25rem; transition: border-color 0.2s; }
+        .stat-card:hover { border-color: #555; }
+        .stat-value { font-size: 2rem; font-weight: bold; color: var(--thundert-yellow); }
+        .stat-label { color: #b8b8b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+        .text-muted { color: #b8b8b8 !important; }
+        .text-secondary-bright { color: #b8b8b8 !important; }
+        .empty-hint { color: #999; font-style: italic; }
+        .table-dark { background-color: var(--thundert-card); --bs-table-bg: var(--thundert-card); border-color: var(--thundert-border); }
+        th { color: var(--thundert-yellow) !important; border-bottom: 2px solid var(--thundert-yellow) !important; }
+        .badge-basic { background: rgba(158, 158, 158, 0.25); border: 1px solid #9e9e9e; color: var(--thundert-purple-light); }
+        .badge-pro { background: rgba(171, 71, 188, 0.25); border: 1px solid var(--thundert-purple); color: var(--thundert-purple); }
+        .badge-enterprise { background: rgba(213, 0, 249, 0.2); border: 1px solid #d500f9; color: #d500f9; }
+        .severity-critical { color: var(--thundert-red); }
+        .severity-warning { color: #ff9800; }
+        .severity-info { color: #00bcd4; }
+        a { color: var(--thundert-yellow); text-decoration: none; }
+        a:hover { color: var(--thundert-yellow-hover); text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="max-width: 1400px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+            <div>
+                <h1 class="mb-0">⚡ ThunderT <small class="text-secondary-bright fs-5">Manager v2.2 — Statystyki</small></h1>
+                <small class="text-secondary-bright">Admin ID: {{ admin_id }}</small>
+            </div>
+            <div>
+                <a href="/" class="btn btn-outline-light btn-sm me-2">DASHBOARD</a>
+                <a href="/export_keys" class="btn btn-outline-light btn-sm me-2">EKSPORTUJ .TXT</a>
+                <a href="/logout" class="btn btn-outline-light btn-sm">WYLOGUJ</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} py-2">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-label">Wszystkie licencje</div>
+                    <div class="stat-value">{{ stats.total_licenses }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-label">Aktywne sesje</div>
+                    <div class="stat-value">{{ stats.active_sessions }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-label">Nowe (7 dni)</div>
+                    <div class="stat-value">{{ stats.created_7d }}</div>
+                    <small class="text-secondary-bright">30 dni: {{ stats.created_30d }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card p-4">
+                    <h5 class="section-title mb-3">Licencje według typu</h5>
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Typ</th>
+                                <th class="text-end">Liczba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in ['BASIC', 'PRO', 'ENTERPRISE'] %}
+                            {% if stats.by_type.get(t, 0) %}
+                            <tr>
+                                <td><span class="badge badge-{{ t.lower() }}">{{ t }}</span></td>
+                                <td class="text-end">{{ stats.by_type.get(t, 0) }}</td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                            {% for t, n in stats.by_type.items() %}
+                            {% if t not in ['BASIC', 'PRO', 'ENTERPRISE'] %}
+                            <tr>
+                                <td><span class="badge bg-secondary">{{ t }}</span></td>
+                                <td class="text-end">{{ n }}</td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                            {% if not stats.by_type %}
+                            <tr><td colspan="2" class="text-secondary-bright empty-hint">Brak danych</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card p-4">
+                    <h5 class="section-title mb-3">Licencje według statusu</h5>
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th class="text-end">Liczba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in ['active', 'expired', 'banned'] %}
+                            {% if stats.by_status.get(s, 0) %}
+                            <tr>
+                                <td class="text-capitalize">{{ s }}</td>
+                                <td class="text-end">{{ stats.by_status.get(s, 0) }}</td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                            {% for s, n in stats.by_status.items() %}
+                            {% if s not in ['active', 'expired', 'banned'] %}
+                            <tr>
+                                <td class="text-capitalize">{{ s }}</td>
+                                <td class="text-end">{{ n }}</td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                            {% if not stats.by_status %}
+                            <tr><td colspan="2" class="text-secondary-bright empty-hint">Brak danych</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-2">
+            <div class="col-lg-6">
+                <div class="card p-4">
+                    <h5 class="section-title mb-3">Logi — severity (próbka {{ stats.total_logs_sampled }})</h5>
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th class="text-end">Liczba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sev, n in stats.by_severity.items() %}
+                            <tr>
+                                <td><span class="severity-{{ sev }} text-capitalize">{{ sev }}</span></td>
+                                <td class="text-end">{{ n }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not stats.by_severity %}
+                            <tr><td colspan="2" class="text-secondary-bright empty-hint">Brak danych</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card p-4">
+                    <h5 class="section-title mb-3">Utworzone licencje (ostatnie 14 dni)</h5>
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th class="text-end">Liczba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d, n in stats.created_per_day.items() %}
+                            <tr>
+                                <td>{{ d }}</td>
+                                <td class="text-end">{{ n }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not stats.created_per_day %}
+                            <tr><td colspan="2" class="text-secondary-bright empty-hint">Brak danych</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

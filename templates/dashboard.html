@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <title>ThunderT Admin</title>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --thundert-yellow: #FFD700;
+            --thundert-yellow-hover: #e6c200;
+            --thundert-purple: #ab47bc;
+            --thundert-purple-light: #ce93d8;
+            --thundert-green: #00c853;
+            --thundert-blue: #2196F3;
+            --thundert-red: #f44336;
+            --thundert-bg: #0a0a0a;
+            --thundert-card: #111;
+            --thundert-border: #333;
+        }
+        body { background: var(--thundert-bg); color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
+        .card { background: var(--thundert-card); border: 1px solid var(--thundert-border); margin-bottom: 20px; }
+        h1, h2 { color: var(--thundert-yellow); text-transform: uppercase; letter-spacing: 1px; }
+        h5, .section-title { color: var(--thundert-yellow); text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid var(--thundert-yellow); padding-bottom: 0.35rem; margin-bottom: 1rem; display: inline-block; }
+        .btn-gold { background: var(--thundert-yellow); color: #000; border: none; font-weight: bold; }
+        .btn-gold:hover { background: var(--thundert-yellow-hover); color: #000; }
+        
+        /* Pixelated/digital font for action buttons */
+        @font-face {
+            font-family: 'Digital';
+            src: local('Courier New'), local('monospace');
+        }
+        
+        .btn-action {
+            background: transparent !important;
+            border: 1px solid;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            padding: 4px 12px;
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+        .btn-edit { 
+            color: #00ffff !important; 
+            border-color: #00ffff !important; 
+            background: transparent !important;
+        }
+        .btn-edit:hover { 
+            color: #00ffff !important; 
+            border-color: #00ffff !important;
+            background: rgba(0, 255, 255, 0.1) !important;
+        }
+        .btn-reset { 
+            color: #00ffff !important; 
+            border-color: #00ffff !important; 
+            background: transparent !important;
+            font-size: 16px;
+            padding: 4px 10px;
+        }
+        .btn-reset:hover { 
+            color: #00ffff !important; 
+            border-color: #00ffff !important;
+            background: rgba(0, 255, 255, 0.1) !important;
+        }
+        .btn-ban { 
+            color: #FFD700 !important; 
+            border-color: #FFD700 !important; 
+            background: transparent !important;
+        }
+        .btn-ban:hover { 
+            color: #FFD700 !important; 
+            border-color: #FFD700 !important;
+            background: rgba(255, 215, 0, 0.1) !important;
+        }
+        .btn-delete { 
+            color: #f44336 !important; 
+            border-color: #f44336 !important; 
+            background: transparent !important;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 4px 10px;
+        }
+        .btn-delete:hover { 
+            color: #f44336 !important; 
+            border-color: #f44336 !important;
+            background: rgba(244, 67, 54, 0.1) !important;
+        }
+
+        .table-dark { background-color: var(--thundert-card); --bs-table-bg: var(--thundert-card); border-color: var(--thundert-border); }
+        th { color: var(--thundert-yellow) !important; border-bottom: 2px solid var(--thundert-yellow) !important; }
+
+        .badge-basic { background: rgba(158, 158, 158, 0.25); border: 1px solid #9e9e9e; color: var(--thundert-purple-light); }
+        .badge-pro { background: rgba(171, 71, 188, 0.25); border: 1px solid var(--thundert-purple); color: var(--thundert-purple); }
+        .badge-enterprise { background: rgba(213, 0, 249, 0.2); border: 1px solid #d500f9; color: #d500f9; }
+
+        .status-active { color: var(--thundert-green); font-weight: 600; }
+        .status-expired { color: #ff9800; }
+        .status-banned { color: var(--thundert-red); text-decoration: line-through; }
+
+        .log-critical { background: rgba(244, 67, 54, 0.1); border-left: 3px solid var(--thundert-red); }
+        .log-warning { border-left: 3px solid #ff9800; }
+
+        .nav-tabs .nav-link { color: #b8b8b8; border-color: var(--thundert-border); }
+        .nav-tabs .nav-link.active { background-color: var(--thundert-card); border-color: var(--thundert-yellow); border-bottom-color: var(--thundert-card); color: var(--thundert-yellow); }
+        .table-dark .font-monospace a { color: #fff; }
+        .table-dark .font-monospace a:hover { color: var(--thundert-yellow) !important; }
+        .text-secondary-bright { color: #b8b8b8 !important; }
+        .text-muted { color: #b8b8b8 !important; }
+        .form-label, .stat-label, small.text-muted { color: #b8b8b8 !important; }
+        .table td.small, .table .hwid-info { color: #c4c4c4; }
+        .empty-hint { color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="max-width: 1400px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+            <div>
+                <h1 class="mb-0">⚡ ThunderT Phone <small class="text-secondary-bright fs-5">Manager</small></h1>
+                <small class="text-secondary-bright">Admin ID: {{ admin_id }}</small>
+            </div>
+            <a href="/logout" class="btn btn-outline-light btn-sm">WYLOGUJ</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} py-2">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Live Stats Widget -->
+        <div class="card p-4 mb-4" id="liveStatsWidget">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span style="font-size: 20px;">📊</span>
+                    <h5 class="section-title mb-0" style="border-bottom: 2px solid var(--thundert-yellow);">STATYSTYKI NA ŻYWO</h5>
+                </div>
+                <small class="text-secondary-bright" id="statsUpdateTime">Aktualizacja...</small>
+            </div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 4px;">
+                        <div class="text-secondary-bright small mb-1">UŻYTKOWNICY ONLINE</div>
+                        <div class="h3 mb-0" style="color: var(--thundert-yellow); font-weight: bold;" id="onlineUsers">-</div>
+                        <small class="text-secondary-bright">ostatnia godzina</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background: rgba(0, 200, 83, 0.1); border: 1px solid rgba(0, 200, 83, 0.3); border-radius: 4px;">
+                        <div class="text-secondary-bright small mb-1">AKTYWNE SESJE</div>
+                        <div class="h3 mb-0" style="color: var(--thundert-green); font-weight: bold;" id="activeSessions">-</div>
+                        <small class="text-secondary-bright">teraz</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 4px;">
+                        <div class="text-secondary-bright small mb-1">WERYFIKACJE (1H)</div>
+                        <div class="h3 mb-0" style="color: var(--thundert-blue); font-weight: bold;" id="verifications1h">-</div>
+                        <small class="text-secondary-bright">ostatnia godzina</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background: rgba(171, 71, 188, 0.1); border: 1px solid rgba(171, 71, 188, 0.3); border-radius: 4px;">
+                        <div class="text-secondary-bright small mb-1">AKTYWNE LICENCJE</div>
+                        <div class="h3 mb-0" style="color: var(--thundert-purple); font-weight: bold;" id="activeLicenses">-</div>
+                        <small class="text-secondary-bright">ogółem</small>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span style="font-size: 16px;">📈</span>
+                    <h6 style="color: var(--thundert-yellow); margin: 0; font-weight: bold; text-transform: uppercase;">AKTYWNOŚĆ WERYFIKACJI (OSTATNIE 12H)</h6>
+                </div>
+                <div style="height: 2px; background: var(--thundert-yellow); width: 100%; margin-top: 5px; margin-bottom: 15px;"></div>
+            </div>
+            <div style="height: 200px; position: relative;">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button">ZARZĄDZANIE KLUCZAMI</button>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/stats" style="color: #888;">STATYSTYKI</a>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">LOGI SYSTEMOWE</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+
+            <div class="tab-pane fade show active" id="home">
+                <div class="card p-4">
+                    <h5 class="section-title">Generator nowych dostępów</h5>
+                    <form action="/create" method="POST" class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label small">Notatka</label>
+                            <input type="text" name="note" class="form-control bg-dark text-white border-secondary" placeholder="np. Klient Discord #4412" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Telegram</label>
+                            <input type="text" name="telegram_username" class="form-control bg-dark text-white border-secondary" placeholder="@username">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Pakiet</label>
+                            <select name="license_type" class="form-select bg-dark text-white border-secondary">
+                                <option value="BASIC">BASIC</option>
+                                <option value="PRO" selected>PRO</option>
+                                <option value="ENTERPRISE">ENTERPRISE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Czas trwania</label>
+                            <select name="duration" class="form-select bg-dark text-white border-secondary">
+                                <option value="1">1 Dzień</option>
+                                <option value="7">7 Dni</option>
+                                <option value="30" selected>30 Dni</option>
+                                <option value="90">90 Dni</option>
+                                <option value="365">1 Rok</option>
+                                <option value="lifetime">LIFETIME</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">Max tel.</label>
+                            <input type="number" name="max_phones" class="form-control bg-dark text-white border-secondary" value="1" min="1" max="99" title="Max telefonów">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-gold w-100">STWÓRZ KLUCZ</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card p-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h5 class="section-title mb-0">Baza kluczy</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="searchKeys" class="form-control form-control-sm bg-dark text-white border-secondary" style="width: 220px;" placeholder="Szukaj (klucz, notatka, Telegram)...">
+                            <a href="/export_keys" class="btn btn-gold btn-sm">EKSPORTUJ .TXT</a>
+                        </div>
+                    </div>
+                    <table class="table table-dark table-hover mb-0" id="keysTable">
+                        <thead>
+                            <tr>
+                                <th>KLUCZ</th>
+                                <th>TYP</th>
+                                <th>STATUS</th>
+                                <th>WYGASA</th>
+                                <th>OSTATNI HEARTBEAT</th>
+                                <th>HWID / INFO</th>
+                                <th class="text-end">PANEL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lic in licenses %}
+                            <tr class="key-row" data-key="{{ lic.license_key | lower }}" data-note="{{ (lic.note or '') | lower }}" data-telegram="{{ (lic.telegram_username or '') | lower }}">
+                                <td class="font-monospace text-white">
+                                    <a href="{{ url_for('license_detail', license_id=lic.id) }}" class="text-white text-decoration-none">{{ lic.license_key }}</a>
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-secondary-bright copy-key" title="Kopiuj klucz" data-key="{{ lic.license_key }}">📋</button>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ (lic.license_type or 'basic').lower() }}">{{ lic.license_type or 'BASIC' }}</span>
+                                </td>
+                                <td>
+                                    {% if lic.status == 'banned' %}
+                                        <span class="status-banned">BANNED</span>
+                                    {% elif lic.is_expired or lic.status == 'expired' %}
+                                        <span class="status-expired">EXPIRED</span>
+                                    {% else %}
+                                        <span class="status-active">AKTYWNY</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if lic.expires_at %}
+                                        <small>{{ lic.expires_at[:10] }}</small>
+                                    {% else %}
+                                        <span class="text-secondary-bright">LIFETIME</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if lic.last_seen %}
+                                        <small class="text-secondary-bright">{{ lic.last_seen[:19] }}</small>
+                                    {% else %}
+                                        <small class="text-secondary-bright">—</small>
+                                    {% endif %}
+                                </td>
+                                <td class="hwid-info">
+                                    <div class="small">{{ lic.hwid[:10] + '…' if lic.hwid else '—' }}</div>
+                                    <div class="small text-white">{{ lic.note or '—' }}</div>
+                                    {% if lic.telegram_username %}<div class="small text-secondary-bright">@{{ lic.telegram_username }}</div>{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('license_detail', license_id=lic.id) }}" class="btn btn-sm btn-action btn-edit me-1">EDYTUJ</a>
+                                    {% if lic.hwid %}
+                                    <form action="/action/reset_hwid/{{ lic.id }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-action btn-reset" title="Reset HWID">♻</button>
+                                    </form>
+                                    {% endif %}
+                                    <form action="/action/reset_devices/{{ lic.id }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-action btn-reset" title="Reset urządzeń + sesji">♻</button>
+                                    </form>
+                                    {% if lic.status == 'banned' %}
+                                    <form action="/action/unban/{{ lic.id }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-action btn-ban">UNBAN</button>
+                                    </form>
+                                    {% else %}
+                                    <form action="/action/ban/{{ lic.id }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-action btn-ban">BAN</button>
+                                    </form>
+                                    {% endif %}
+                                    <form action="/action/delete/{{ lic.id }}" method="POST" class="d-inline" onsubmit="return confirm('Usunąć?')">
+                                        <button class="btn btn-sm btn-action btn-delete">X</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not licenses %}
+                            <tr><td colspan="7" class="text-center py-4 text-secondary-bright empty-hint">Brak licencji. Utwórz pierwszą w generatorze powyżej.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="logs">
+                <div class="card p-3">
+                    <h5 class="section-title mb-3">Logi systemowe</h5>
+                    <table class="table table-dark table-sm">
+                        <thead>
+                            <tr>
+                                <th>CZAS</th>
+                                <th>SEVERITY</th>
+                                <th>WIADOMOŚĆ</th>
+                                <th>IP</th>
+                                <th>KLUCZ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr class="log-{{ log.severity }}">
+                                <td class="text-secondary-bright">{{ log.created_at[:19] }}</td>
+                                <td class="text-uppercase fw-bold {{ 'text-danger' if log.severity == 'critical' else 'text-warning' }}">
+                                    {{ log.severity }}
+                                </td>
+                                <td>{{ log.message }} <br> <small class="text-secondary-bright">HWID: {{ log.hwid_attempt }}</small></td>
+                                <td>{{ log.ip_address }}</td>
+                                <td class="font-monospace small">{{ log.license_key }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+(function () {
+    var search = document.getElementById('searchKeys');
+    var table = document.getElementById('keysTable');
+    if (search && table) {
+        search.addEventListener('input', function () {
+            var q = (this.value || '').toLowerCase().trim();
+            var rows = table.querySelectorAll('tbody .key-row');
+            rows.forEach(function (tr) {
+                var show = !q || tr.dataset.key.indexOf(q) !== -1 || tr.dataset.note.indexOf(q) !== -1 || tr.dataset.telegram.indexOf(q) !== -1;
+                tr.style.display = show ? '' : 'none';
+            });
+        });
+    }
+    document.querySelectorAll('.copy-key').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var key = this.dataset.key;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(key).then(function () {
+                    var t = btn.textContent; btn.textContent = '✓'; setTimeout(function () { btn.textContent = t; }, 800);
+                });
+            }
+        });
+    });
+})();
+
+// Live Stats Widget
+(function() {
+    var ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+    
+    var chart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Aktywność weryfikacji',
+                data: [],
+                borderColor: '#FFD700',
+                backgroundColor: 'rgba(255, 215, 0, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointBackgroundColor: '#FFD700',
+                pointBorderColor: '#FFD700',
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#FFD700',
+                    bodyColor: '#e0e0e0',
+                    borderColor: '#FFD700',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#b8b8b8' }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#b8b8b8' }
+                }
+            }
+        }
+    });
+    
+    function updateStats() {
+        fetch('/api/live_stats')
+            .then(r => r.json())
+            .then(function(data) {
+                document.getElementById('onlineUsers').textContent = data.online_users || 0;
+                document.getElementById('activeSessions').textContent = data.active_sessions || 0;
+                document.getElementById('verifications1h').textContent = data.verifications_1h || 0;
+                document.getElementById('activeLicenses').textContent = data.active_licenses || 0;
+                
+                // Update chart
+                if (data.hourly_activity) {
+                    var labels = data.hourly_activity.map(function(item) { return item.hour; });
+                    var values = data.hourly_activity.map(function(item) { return item.count; });
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = values;
+                    chart.update('none');
+                }
+                
+                var now = new Date();
+                document.getElementById('statsUpdateTime').textContent = 'Ostatnia aktualizacja: ' + 
+                    now.getHours().toString().padStart(2, '0') + ':' + 
+                    now.getMinutes().toString().padStart(2, '0');
+            })
+            .catch(function(err) {
+                console.error('Stats update error:', err);
+            });
+    }
+    
+    updateStats();
+    setInterval(updateStats, 30000); // Update every 30 seconds
+})();
+    </script>
+</body>
+</html>
